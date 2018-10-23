@@ -1,0 +1,10 @@
+framework module "Celersdk" {
+	header "ref.h"
+    header "Celersdk.objc.h"
+    header "Geth.objc.h"
+    header "Appsdk.objc.h"
+    header "universe.objc.h"
+    header "Celersdk.h"
+
+    export *
+}
