@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name         = "Celer"
-  s.version      = "0.0.1"
+  s.version      = "0.0.2"
   s.summary      = "SDK for celer clients"
   s.description  = <<-DESC
                     This is used for integrate DApps with celer support.

@@ -37,6 +37,7 @@ public class CelerClient: NSObject {
     var error: NSError?
  
     client = CelersdkNewClient(keyStore, password, config, &error)
+
     
     if let error = error {
       client = nil
@@ -113,6 +114,8 @@ public class CelerClient: NSObject {
       NSLog("Error: \(error.localizedDescription)")
     }
   }
+  
+
 }
 
 extension CelerClient: CelersdkCAppCallbackProtocol {

@@ -22,6 +22,7 @@
 @class GethCallMsg;
 @class GethCallOpts;
 @class GethContext;
+@class GethCriteria;
 @class GethEnode;
 @class GethEnodes;
 @class GethEthereumClient;
@@ -30,11 +31,15 @@
 @class GethHashes;
 @class GethHeader;
 @class GethHeaders;
+@class GethInfo;
 @class GethInterface;
 @class GethInterfaces;
 @class GethKeyStore;
 @class GethLog;
 @class GethLogs;
+@class GethMessage;
+@class GethMessages;
+@class GethNewMessage;
 @class GethNode;
 @class GethNodeConfig;
 @class GethNodeInfo;
@@ -49,10 +54,13 @@
 @class GethTransactOpts;
 @class GethTransaction;
 @class GethTransactions;
+@class GethWhisperClient;
 @protocol GethFilterLogsHandler;
 @class GethFilterLogsHandler;
 @protocol GethNewHeadHandler;
 @class GethNewHeadHandler;
+@protocol GethNewMessageHandler;
+@class GethNewMessageHandler;
 @protocol GethSigner;
 @class GethSigner;
 
@@ -64,6 +72,11 @@
 @protocol GethNewHeadHandler <NSObject>
 - (void)onError:(NSString*)failure;
 - (void)onNewHead:(GethHeader*)header;
+@end
+
+@protocol GethNewMessageHandler <NSObject>
+- (void)onError:(NSString*)failure;
+- (void)onNewMessage:(GethMessage*)message;
 @end
 
 @protocol GethSigner <NSObject>
@@ -244,7 +257,10 @@ selects base 2. Otherwise the selected base is 10.
 @property(strong, readonly) id _ref;
 
 - (instancetype)initWithRef:(id)ref;
-- (instancetype)init;
+/**
+ * NewBigInts creates a slice of uninitialized big numbers.
+ */
+- (instancetype)init:(long)size;
 /**
  * Get returns the bigint at the given index from the slice.
  */
@@ -437,6 +453,25 @@ Canceling this context releases resources associated with it, so code should
 call cancel as soon as the operations running in this Context complete.
  */
 - (GethContext*)withTimeout:(int64_t)nsec;
+@end
+
+/**
+ * Criteria holds various filter options for inbound messages.
+ */
+@interface GethCriteria : NSObject <goSeqRefInterface> {
+}
+@property(strong, readonly) id _ref;
+
+- (instancetype)initWithRef:(id)ref;
+- (instancetype)init:(NSData*)topic;
+- (double)getMinPow;
+- (NSString*)getPrivateKeyID;
+- (NSData*)getSig;
+- (NSString*)getSymKeyID;
+- (void)setMinPow:(double)pow;
+- (void)setPrivateKeyID:(NSString*)privateKeyID;
+- (void)setSig:(NSData*)sig;
+- (void)setSymKeyID:(NSString*)symKeyID;
 @end
 
 /**
@@ -807,6 +842,17 @@ no sync currently running, it returns nil.
 @end
 
 /**
+ * Info represents a diagnostic information about the whisper node.
+ */
+@interface GethInfo : NSObject <goSeqRefInterface> {
+}
+@property(strong, readonly) id _ref;
+
+- (instancetype)initWithRef:(id)ref;
+- (instancetype)init;
+@end
+
+/**
  * Interface represents a wrapped version of Go's interface{}, with the capacity
 to store arbitrary data types.
 
@@ -1045,6 +1091,72 @@ opcode and stored/indexed by the node.
  * Size returns the number of logs in the slice.
  */
 - (long)size;
+@end
+
+/**
+ * Message represents a whisper message.
+ */
+@interface GethMessage : NSObject <goSeqRefInterface> {
+}
+@property(strong, readonly) id _ref;
+
+- (instancetype)initWithRef:(id)ref;
+- (instancetype)init;
+- (NSData*)getDst;
+- (NSData*)getHash;
+- (NSData*)getPayload;
+- (double)getPoW;
+- (NSData*)getSig;
+- (int64_t)getTTL;
+- (int64_t)getTimestamp;
+@end
+
+/**
+ * Messages represents an array of messages.
+ */
+@interface GethMessages : NSObject <goSeqRefInterface> {
+}
+@property(strong, readonly) id _ref;
+
+- (instancetype)initWithRef:(id)ref;
+- (instancetype)init;
+/**
+ * Get returns the message at the given index from the slice.
+ */
+- (GethMessage*)get:(long)index error:(NSError**)error;
+/**
+ * Size returns the number of messages in the slice.
+ */
+- (long)size;
+@end
+
+/**
+ * NewMessage represents a new whisper message that is posted through the RPC.
+ */
+@interface GethNewMessage : NSObject <goSeqRefInterface> {
+}
+@property(strong, readonly) id _ref;
+
+- (instancetype)initWithRef:(id)ref;
+- (instancetype)init;
+- (NSData*)getPayload;
+- (double)getPowTarget;
+- (int64_t)getPowTime;
+- (NSData*)getPublicKey;
+- (NSString*)getSig;
+- (NSString*)getSymKeyID;
+- (int64_t)getTTL;
+- (NSString*)getTargetPeer;
+- (NSData*)getTopic;
+- (void)setPayload:(NSData*)payload;
+- (void)setPowTarget:(double)powTarget;
+- (void)setPowTime:(int64_t)powTime;
+- (void)setPublicKey:(NSData*)publicKey;
+- (void)setSig:(NSString*)sig;
+- (void)setSymKeyID:(NSString*)symKeyID;
+- (void)setTTL:(int64_t)ttl;
+- (void)setTargetPeer:(NSString*)targetPeer;
+- (void)setTopic:(NSData*)topic;
 @end
 
 /**
@@ -1445,6 +1557,123 @@ valid Ethereum transaction.
 @end
 
 /**
+ * WhisperClient provides access to the Ethereum APIs.
+ */
+@interface GethWhisperClient : NSObject <goSeqRefInterface> {
+}
+@property(strong, readonly) id _ref;
+
+- (instancetype)initWithRef:(id)ref;
+/**
+ * NewWhisperClient connects a client to the given URL.
+ */
+- (instancetype)init:(NSString*)rawurl;
+/**
+ * AddPrivateKey stored the key pair, and returns its ID.
+ */
+- (NSString*)addPrivateKey:(GethContext*)ctx key:(NSData*)key error:(NSError**)error;
+/**
+ * AddSymmetricKey stores the key, and returns its identifier.
+ */
+- (NSString*)addSymmetricKey:(GethContext*)ctx key:(NSData*)key error:(NSError**)error;
+/**
+ * DeleteKeyPair delete the specifies key.
+ */
+- (NSString*)deleteKeyPair:(GethContext*)ctx id_:(NSString*)id_ error:(NSError**)error;
+/**
+ * DeleteMessageFilter removes the filter associated with the given id.
+ */
+- (BOOL)deleteMessageFilter:(GethContext*)ctx id_:(NSString*)id_ error:(NSError**)error;
+/**
+ * DeleteSymmetricKey deletes the symmetric key associated with the given identifier.
+ */
+- (BOOL)deleteSymmetricKey:(GethContext*)ctx id_:(NSString*)id_ error:(NSError**)error;
+/**
+ * GenerateSymmetricKeyFromPassword generates the key from password, stores it, and returns its identifier.
+ */
+- (NSString*)generateSymmetricKeyFromPassword:(GethContext*)ctx passwd:(NSString*)passwd error:(NSError**)error;
+/**
+ * GetFilterMessages retrieves all messages that are received between the last call to
+this function and match the criteria that where given when the filter was created.
+ */
+- (GethMessages*)getFilterMessages:(GethContext*)ctx id_:(NSString*)id_ error:(NSError**)error;
+/**
+ * Info returns diagnostic information about the whisper node.
+ */
+- (GethInfo*)getInfo:(GethContext*)ctx error:(NSError**)error;
+/**
+ * GetPrivateKey return the private key for a key ID.
+ */
+- (NSData*)getPrivateKey:(GethContext*)ctx id_:(NSString*)id_ error:(NSError**)error;
+/**
+ * GetPublicKey return the public key for a key ID.
+ */
+- (NSData*)getPublicKey:(GethContext*)ctx id_:(NSString*)id_ error:(NSError**)error;
+/**
+ * GetSymmetricKey returns the symmetric key associated with the given identifier.
+ */
+- (NSData*)getSymmetricKey:(GethContext*)ctx id_:(NSString*)id_ error:(NSError**)error;
+/**
+ * GetVersion returns the Whisper sub-protocol version.
+ */
+- (NSString*)getVersion:(GethContext*)ctx error:(NSError**)error;
+/**
+ * HasKeyPair returns an indication if the node has a private key or
+key pair matching the given ID.
+ */
+- (BOOL)hasKeyPair:(GethContext*)ctx id_:(NSString*)id_ ret0_:(BOOL*)ret0_ error:(NSError**)error;
+/**
+ * HasSymmetricKey returns an indication if the key associated with the given id is stored in the node.
+ */
+- (BOOL)hasSymmetricKey:(GethContext*)ctx id_:(NSString*)id_ ret0_:(BOOL*)ret0_ error:(NSError**)error;
+/**
+ * Marks specific peer trusted, which will allow it to send historic (expired) messages.
+Note This function is not adding new nodes, the node needs to exists as a peer.
+ */
+- (BOOL)markTrustedPeer:(GethContext*)ctx enode:(NSString*)enode error:(NSError**)error;
+/**
+ * NewKeyPair generates a new public and private key pair for message decryption and encryption.
+It returns an identifier that can be used to refer to the key.
+ */
+- (NSString*)newKeyPair:(GethContext*)ctx error:(NSError**)error;
+/**
+ * NewMessageFilter creates a filter within the node. This filter can be used to poll
+for new messages (see FilterMessages) that satisfy the given criteria. A filter can
+timeout when it was polled for in whisper.filterTimeout.
+ */
+- (NSString*)newMessageFilter:(GethContext*)ctx criteria:(GethCriteria*)criteria error:(NSError**)error;
+/**
+ * NewSymmetricKey generates a random symmetric key and returns its identifier.
+Can be used encrypting and decrypting messages where the key is known to both parties.
+ */
+- (NSString*)newSymmetricKey:(GethContext*)ctx error:(NSError**)error;
+/**
+ * Post a message onto the network.
+ */
+- (NSString*)post:(GethContext*)ctx message:(GethNewMessage*)message error:(NSError**)error;
+/**
+ * SetMaxMessageSize sets the maximal message size allowed by this node. Incoming
+and outgoing messages with a larger size will be rejected. Whisper message size
+can never exceed the limit imposed by the underlying P2P protocol (10 Mb).
+ */
+- (BOOL)setMaxMessageSize:(GethContext*)ctx size:(int32_t)size error:(NSError**)error;
+/**
+ * SetMinimumPoW (experimental) sets the minimal PoW required by this node.
+This experimental function was introduced for the future dynamic adjustment of
+PoW requirement. If the node is overwhelmed with messages, it should raise the
+PoW requirement and notify the peers. The new value should be set relative to
+the old value (e.g. double). The old value could be obtained via shh_info call.
+ */
+- (BOOL)setMinimumPoW:(GethContext*)ctx pow:(double)pow error:(NSError**)error;
+/**
+ * SubscribeMessages subscribes to messages that match the given criteria. This method
+is only supported on bi-directional connections such as websockets and IPC.
+NewMessageFilter uses polling and is supported over HTTP.
+ */
+- (GethSubscription*)subscribeMessages:(GethContext*)ctx criteria:(GethCriteria*)criteria handler:(id<GethNewMessageHandler>)handler buffer:(long)buffer error:(NSError**)error;
+@end
+
+/**
  * LightScryptN is the N parameter of Scrypt encryption algorithm, using 4MB
 memory and taking approximately 100ms CPU time on a modern processor.
  */
@@ -1515,6 +1744,11 @@ FOUNDATION_EXPORT GethAddresses* GethNewAddressesEmpty(void);
 FOUNDATION_EXPORT GethBigInt* GethNewBigInt(int64_t x);
 
 /**
+ * NewBigInts creates a slice of uninitialized big numbers.
+ */
+FOUNDATION_EXPORT GethBigInts* GethNewBigInts(long size);
+
+/**
  * NewBlockFromJSON parses a block from a JSON data dump.
  */
 FOUNDATION_EXPORT GethBlock* GethNewBlockFromJSON(NSString* data, NSError** error);
@@ -1540,6 +1774,8 @@ values, and has no deadline. It is typically used by the main function,
 initialization, and tests, and as the top-level Context for incoming requests.
  */
 FOUNDATION_EXPORT GethContext* GethNewContext(void);
+
+FOUNDATION_EXPORT GethCriteria* GethNewCriteria(NSData* topic);
 
 /**
  * NewEnode parses a node designator.
@@ -1634,6 +1870,8 @@ FOUNDATION_EXPORT GethInterfaces* GethNewInterfaces(long size);
  */
 FOUNDATION_EXPORT GethKeyStore* GethNewKeyStore(NSString* keydir, long scryptN, long scryptP);
 
+FOUNDATION_EXPORT GethNewMessage* GethNewNewMessage(void);
+
 /**
  * NewNode creates and configures a new Geth node.
  */
@@ -1680,6 +1918,11 @@ FOUNDATION_EXPORT GethTransaction* GethNewTransactionFromJSON(NSString* data, NS
 FOUNDATION_EXPORT GethTransaction* GethNewTransactionFromRLP(NSData* data, NSError** error);
 
 /**
+ * NewWhisperClient connects a client to the given URL.
+ */
+FOUNDATION_EXPORT GethWhisperClient* GethNewWhisperClient(NSString* rawurl, NSError** error);
+
+/**
  * RinkebyGenesis returns the JSON spec to use for the Rinkeby test network
  */
 FOUNDATION_EXPORT NSString* GethRinkebyGenesis(void);
@@ -1697,6 +1940,8 @@ FOUNDATION_EXPORT NSString* GethTestnetGenesis(void);
 @class GethFilterLogsHandler;
 
 @class GethNewHeadHandler;
+
+@class GethNewMessageHandler;
 
 @class GethSigner;
 
@@ -1724,6 +1969,19 @@ subscription failure.
 - (instancetype)initWithRef:(id)ref;
 - (void)onError:(NSString*)failure;
 - (void)onNewHead:(GethHeader*)header;
+@end
+
+/**
+ * NewHeadHandler is a client-side subscription callback to invoke on events and
+subscription failure.
+ */
+@interface GethNewMessageHandler : NSObject <goSeqRefInterface, GethNewMessageHandler> {
+}
+@property(strong, readonly) id _ref;
+
+- (instancetype)initWithRef:(id)ref;
+- (void)onError:(NSString*)failure;
+- (void)onNewMessage:(GethMessage*)message;
 @end
 
 /**
